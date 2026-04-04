@@ -4,9 +4,11 @@ let heatLayer;
 let lastPosition = null;
 let lastMoveTime = Date.now();
 let hotspots = [];
+let lastSuccessfulSpots = []; // MEMORY CACHE
 let orderHistory = JSON.parse(localStorage.getItem('orderHistory') || '[]');
 let earningsHistory = JSON.parse(localStorage.getItem('earningsHistory') || '[]');
 let idleLimitMinutes = parseInt(localStorage.getItem('idleLimitMinutes') || '10');
+let isAlarmActive = localStorage.getItem('isAlarmActive') !== 'false';
 let lastFetchTime = 0;
 const FETCH_COOLDOWN_MS = 15000;
 
@@ -34,35 +36,32 @@ function initMap(lat, lng) {
     fetchNearbyHotspots(lat, lng);
 }
 
-// --- Smart Logic (Core of Smart Helper) ---
+// --- Smart Logic (Core) ---
 
 function calculateGacorScore(place, currentHour) {
-    let score = 30; // Skor dasar
+    let score = 30;
     const type = (place.type || "").toLowerCase();
     const name = (place.name || "").toLowerCase();
 
-    // 1. Tipe Prioritas
     if (type.includes('mall')) score += 50;
     if (type.includes('food_court')) score += 45;
     if (type.includes('fast_food')) score += 40;
     if (type.includes('restaurant')) score += 35;
     if (type.includes('supermarket')) score += 30;
-    if (type.includes('convenience') || type.includes('minimarket')) score += 20;
+    if (type.includes('convenience') || type.includes('minimarket')) score += 15;
 
-    // 2. Logika Waktu Gacor
-    if (currentHour >= 11 && currentHour <= 14) { // Puncak Makan Siang
-        if (type.includes('restaurant') || type.includes('food_court') || name.includes('ayam') || name.includes('nasi')) score += 30;
+    if (currentHour >= 11 && currentHour <= 14) {
+        if (type.includes('restaurant') || type.includes('food_court') || name.includes('ayam') || name.includes('bakmie')) score += 35;
     }
-    if (currentHour >= 17 && currentHour <= 20) { // Puncak Makan Malam
-        if (type.includes('fast_food') || type.includes('martabak') || name.includes('sate') || name.includes('bakso')) score += 25;
+    if (currentHour >= 17 && currentHour <= 21) {
+        if (type.includes('fast_food') || type.includes('martabak') || name.includes('sate') || name.includes('malam')) score += 30;
     }
-    if (currentHour >= 21 || currentHour <= 3) { // Larut Malam
-        if (type.includes('convenience') || name.includes('warmindo')) score += 40;
+    if (currentHour >= 22 || currentHour <= 3) {
+        if (type.includes('convenience') || name.includes('warkop') || name.includes('warmindo')) score += 40;
     }
 
-    // 3. Jarak (Optimalitas)
     if (place.distance < 400) score += 20;
-    else if (place.distance > 1500) score -= 20;
+    else if (place.distance > 1800) score -= 30;
 
     return Math.min(score, 100);
 }
@@ -73,30 +72,40 @@ async function fetchNearbyHotspots(lat, lng) {
     lastFetchTime = now;
     
     const badge = document.getElementById('status-badge');
-    badge.innerText = "🔍 Analisis Order...";
+    badge.innerText = "🔄 Mengupdate Data...";
     badge.style.background = 'rgba(241, 196, 15, 0.2)';
     badge.style.color = '#f1c40f';
 
-    hotspots.forEach(h => map.removeLayer(h));
-    hotspots = [];
-
-    const query = `[out:json][timeout:15];(nwr(around:2000,${lat},${lng})[amenity~"restaurant|fast_food|cafe|food_court|pharmacy"];nwr(around:2000,${lat},${lng})[shop~"convenience|supermarket|mall"];);out center 50;`;
+    const query = `[out:json][timeout:15];(nwr(around:2200,${lat},${lng})[amenity~"restaurant|fast_food|cafe|food_court|pharmacy"];nwr(around:2200,${lat},${lng})[shop~"convenience|supermarket|mall|minimarket|department_store"];);out center 50;`;
     const encodedQuery = encodeURIComponent(query);
     
     let data = null;
+    let mirrorFound = false;
+
     for (const mirror of OVERPASS_MIRRORS) {
         try {
             const controller = new AbortController();
             const timer = setTimeout(() => controller.abort(), 12000);
             const response = await fetch(`${mirror}?data=${encodedQuery}`, { signal: controller.signal });
             clearTimeout(timer);
-            if (response.ok) { data = await response.json(); break; }
+            if (response.ok) { data = await response.json(); mirrorFound = true; break; }
         } catch (e) {}
     }
 
+    // MEMORY CACHE LOGIC: Jika gagal, jangan hapus yang ada di layar
     if (!data || !data.elements || data.elements.length === 0) {
-        badge.innerText = "☕ Standby";
-        showStaticRecommendations();
+        if (lastSuccessfulSpots.length > 0) {
+            badge.innerText = "📍 Memori Aktif";
+            badge.style.color = "#3498db";
+            // Update jarak dari data memori
+            lastSuccessfulSpots.forEach(p => {
+                p.distance = Math.round(getDistance(lat, lng, p.lat, p.lon));
+            });
+            updateSmartRecommendations(lastSuccessfulSpots.sort((a,b) => b.gacorScore - a.gacorScore));
+        } else {
+            badge.innerText = "☕ Standby";
+            showStaticRecommendations();
+        }
         return;
     }
 
@@ -104,24 +113,24 @@ async function fetchNearbyHotspots(lat, lng) {
     const places = data.elements.map(el => {
         const coords = el.center || { lat: el.lat, lon: el.lon };
         const p = {
-            name: el.tags.name || el.tags.shop || el.tags.amenity || "Spot",
+            name: el.tags.name || el.tags.shop || el.tags.amenity || "Area Rame",
             type: el.tags.amenity || el.tags.shop || "Point",
             lat: coords.lat, lon: coords.lon,
             distance: Math.round(getDistance(lat, lng, coords.lat, coords.lon))
         };
         p.gacorScore = calculateGacorScore(p, currentHour);
         return p;
-    }).sort((a, b) => b.gacorScore - a.gacorScore); // SORT BY SCORE! (Bukan Jarak)
+    }).sort((a, b) => b.gacorScore - a.gacorScore);
 
+    // Simpan hasil sukses ke memori
+    lastSuccessfulSpots = places;
+
+    hotspots.forEach(h => map.removeLayer(h));
+    hotspots = [];
     places.slice(0, 15).forEach(place => {
-        let color = '#3498db';
-        if (place.gacorScore > 75) color = '#e74c3c'; // Merah (Hot)
-        else if (place.gacorScore > 50) color = '#f1c40f'; // Kuning (Medium)
-        
-        const spot = L.circle([place.lat, place.lon], { 
-            color: color, fillColor: color, fillOpacity: 0.3, radius: 55, weight: 1 
-        }).addTo(map);
-        spot.bindPopup(`<b>${place.name}</b><br>Skor Gacor: ${place.gacorScore}%`);
+        let color = place.gacorScore > 75 ? '#e74c3c' : (place.gacorScore > 50 ? '#f1c40f' : '#3498db');
+        const spot = L.circle([place.lat, place.lon], { color: color, fillColor: color, fillOpacity: 0.3, radius: 60, weight: 1 }).addTo(map);
+        spot.bindPopup(`<b>${place.name}</b><br>Gacor: ${place.gacorScore}%`);
         hotspots.push(spot);
     });
 
@@ -131,19 +140,18 @@ async function fetchNearbyHotspots(lat, lng) {
 function updateSmartRecommendations(places) {
     const list = document.getElementById('recommendation-list');
     list.innerHTML = '';
-    
     const badge = document.getElementById('status-badge');
     badge.innerText = "🎯 Spot Terdeteksi";
     badge.style.background = 'rgba(46, 204, 113, 0.15)';
     badge.style.color = '#2ecc71';
 
-    places.slice(0, 6).forEach(place => {
+    places.slice(0, 8).forEach(place => {
         const div = document.createElement('div');
         div.className = 'recommendation-item';
         let levelColor = '#2ecc71';
         let levelText = "Potensi Sedang";
-        if (place.gacorScore > 75) { levelColor = '#e74c3c'; levelText = "🔥 SANGAT GACOR"; }
-        else if (place.gacorScore > 50) { levelColor = '#f1c40f'; levelText = "⚠️ Potensi Tinggi"; }
+        if (place.gacorScore > 80) { levelColor = '#e74c3c'; levelText = "🔥 SANGAT GACOR"; }
+        else if (place.gacorScore > 55) { levelColor = '#f1c40f'; levelText = "⚠️ Potensi Tinggi"; }
 
         div.innerHTML = `
             <div style="display:flex; justify-content:space-between; align-items:start;">
@@ -162,34 +170,13 @@ function updateSmartRecommendations(places) {
     });
 }
 
-function getDistance(lat1, lon1, lat2, lon2) {
-    const R = 6371e3;
-    const dLat = (lat2-lat1)*Math.PI/180;
-    const dLon = (lon2-lon1)*Math.PI/180;
-    const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
-    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-}
-
-// --- Tracking & Other Functions (Keep same) ---
-// ... (Sisa fungsi startTracking, initMap dsb tetap sama)
-
-function showStaticRecommendations() {
-    const list = document.getElementById('recommendation-list');
-    list.innerHTML = '<div class="recommendation-item">Belum ada spot terdeteksi. Cobalah mendekat ke area jalan besar atau pusat keramaian.</div>';
-}
-
-function updateHeatmap() {
-    if (heatLayer && map) map.removeLayer(heatLayer);
-    const heatData = orderHistory.map(o => [o.lat, o.lng, 0.5]);
-    if (map) heatLayer = L.heatLayer(heatData, { radius: 35, blur: 15, maxZoom: 17 }).addTo(map);
-}
-
 function startTracking() {
     navigator.geolocation.watchPosition(pos => {
         const { latitude, longitude, accuracy } = pos.coords;
         initMap(latitude, longitude);
         document.getElementById('current-zone-title').innerText = "📍 Lokasi Aktif";
-        if (!lastPosition || getDistance(lastPosition.lat, lastPosition.lng, latitude, longitude) > 35) {
+        // Refresh jika geser > 50 meter
+        if (!lastPosition || getDistance(lastPosition.lat, lastPosition.lng, latitude, longitude) > 50) {
             lastMoveTime = Date.now();
             fetchNearbyHotspots(latitude, longitude);
         }
@@ -198,13 +185,31 @@ function startTracking() {
     }, null, { enableHighAccuracy: true });
 }
 
+function getDistance(lat1, lon1, lat2, lon2) {
+    const R = 6371e3;
+    const dLat = (lat2-lat1)*Math.PI/180;
+    const dLon = (lon2-lon1)*Math.PI/180;
+    const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+
+// Suara Alarm
+function playVoiceAlarm() {
+    const speech = new SpeechSynthesisUtterance("Waktunya geser Bang! Jangan kelamaan nongkrong.");
+    speech.lang = 'id-ID';
+    window.speechSynthesis.speak(speech);
+}
+
 function startIdleTimer() {
     setInterval(() => {
         const elapsed = Math.floor((Date.now() - lastMoveTime) / 1000);
         document.getElementById('idle-timer').innerText = `${String(Math.floor(elapsed/60)).padStart(2,'0')}:${String(elapsed%60).padStart(2,'0')}`;
+        // Alarm Suara
+        if (elapsed === (idleLimitMinutes * 60) && isAlarmActive) { playVoiceAlarm(); }
     }, 1000);
 }
 
+// --- Menu Handlers ---
 document.querySelectorAll('.nav-item').forEach(btn => {
     btn.addEventListener('click', () => {
         const targetView = btn.dataset.view;
@@ -212,9 +217,34 @@ document.querySelectorAll('.nav-item').forEach(btn => {
         btn.classList.add('active');
         document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
         document.getElementById(`view-${targetView}`).classList.add('active');
+        lucide.createIcons();
     });
 });
+
+document.getElementById('status-badge').addEventListener('click', () => {
+    if (lastPosition) { lastFetchTime = 0; fetchNearbyHotspots(lastPosition.lat, lastPosition.lng); }
+});
+
+document.getElementById('log-order-btn').addEventListener('click', () => {
+    if (!lastPosition) return alert("🛰️ Tunggu GPS!");
+    orderHistory.push({ id: Date.now(), lat: lastPosition.lat, lng: lastPosition.lng, time: new Date().toLocaleTimeString(), date: new Date().toLocaleDateString('id-ID') });
+    localStorage.setItem('orderHistory', JSON.stringify(orderHistory));
+    updateHeatmap();
+    alert("🚀 Titik Gacor tersimpan!");
+});
+
+function updateHeatmap() {
+    if (heatLayer && map) map.removeLayer(heatLayer);
+    if (!map) return;
+    const heatData = orderHistory.map(o => [o.lat, o.lng, 0.5]);
+    heatLayer = L.heatLayer(heatData, { radius: 35, blur: 15, maxZoom: 17 }).addTo(map);
+}
+
+function showStaticRecommendations() {
+    document.getElementById('recommendation-list').innerHTML = '<div class="recommendation-item">Belum ada spot terdekat. Cobalah geser ke jalan utama yang lebih ramai.</div>';
+}
 
 startTracking();
 startIdleTimer();
 updateHeatmap();
+function formatRupiah(n){return "Rp "+n.toLocaleString("id-ID")}
