@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#2ecc71">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="description" content="Ojol Helper - Asisten Driver Pintar untuk mencari titik gacor dan tracking pendapatan harian secara real-time.">
+    <title>Ojol Helper - Asisten Driver Pintar</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icon.png">
+    <link rel="icon" type="image/png" href="icon.png">
+    <link rel="stylesheet" href="style.css">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+</head>
+<body class="dark-theme">
+    <div class="app-container">
+        <!-- Header -->
+        <header>
+            <div class="brand">
+                <i data-lucide="navigation" class="logo-icon"></i>
+                <h1>Ojol<span>Helper</span></h1>
+            </div>
+            <div class="status-indicator">
+                <span class="pulse-dot"></span>
+                <span id="connection-status">Online</span>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main>
+            <div id="map-container">
+                <div id="map"></div>
+                <!-- Floating Log Button -->
+                <button id="log-order-btn" class="fab">
+                    <i data-lucide="plus"></i>
+                    <span>Tandai Titik Gacor</span>
+                </button>
+            </div>
+            
+            <!-- Home View -->
+            <div id="view-home" class="view active">
+                <div class="dashboard">
+                    <!-- Status Card -->
+                    <div class="card status-card" id="main-status-card">
+                        <div class="card-header">
+                            <i data-lucide="map-pin"></i>
+                            <span>Status Lokasi</span>
+                        </div>
+                        <div class="card-body">
+                            <h2 id="current-zone-title">Mendeteksi Posisi...</h2>
+                            <p id="current-zone-desc">Izinkan akses GPS untuk memulai pencarian orderan.</p>
+                        </div>
+                        <div class="card-footer">
+                            <div class="badge green" id="status-badge">Menunggu GPS</div>
+                        </div>
+                    </div>
+
+                    <!-- Timer Section -->
+                    <div class="stats-grid">
+                        <div class="card stat-card">
+                            <div class="circular-progress">
+                                <svg viewBox="0 0 36 36" class="circular-chart">
+                                    <path class="circle-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                                    <path id="timer-progress" class="circle" stroke-dasharray="0, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                                </svg>
+                                <div class="timer-text">
+                                    <span id="idle-timer">00:00</span>
+                                    <small>Waktu Diam</small>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="card efficiency-card">
+                            <div class="card-header">
+                                <i data-lucide="zap"></i>
+                                <span>Rekomendasi</span>
+                            </div>
+                            <div class="recommendation-list" id="recommendation-list">
+                                <div class="recommendation-item">
+                                    <p>Menunggu data lokasi...</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Hotspots View (New) -->
+            <div id="view-hotspots" class="view">
+                <div class="dashboard">
+                    <div class="card">
+                        <div class="card-header">
+                            <i data-lucide="flame" style="color: coral;"></i>
+                            <span>Riwayat Order Kamu</span>
+                        </div>
+                        <div class="history-list" id="history-list">
+                            <div class="recommendation-item">Belum ada riwayat order tersimpan.</div>
+                        </div>
+                        <button class="btn-clear" id="clear-history">Hapus Riwayat</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Statistik View -->
+            <div id="view-statistik" class="view">
+                <div class="dashboard">
+                    <!-- Ringkasan Hari Ini -->
+                    <div class="card">
+                        <div class="card-header">
+                            <i data-lucide="calendar" style="color: #3498db;"></i>
+                            <span>Ringkasan Hari Ini</span>
+                        </div>
+                        <div class="stat-summary">
+                            <div class="summary-item">
+                                <span class="summary-value" id="stat-today-orders">0</span>
+                                <span class="summary-label">Order</span>
+                            </div>
+                            <div class="summary-item">
+                                <span class="summary-value" id="stat-today-earnings">Rp 0</span>
+                                <span class="summary-label">Pendapatan</span>
+                            </div>
+                            <div class="summary-item">
+                                <span class="summary-value" id="stat-today-hours">0j</span>
+                                <span class="summary-label">Aktif</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Input Pendapatan -->
+                    <div class="card">
+                        <div class="card-header">
+                            <i data-lucide="wallet" style="color: #2ecc71;"></i>
+                            <span>Catat Pendapatan</span>
+                        </div>
+                        <div class="input-group">
+                            <input type="number" id="input-earning" placeholder="Contoh: 15000" class="input-field">
+                            <button id="btn-add-earning" class="btn-primary">+ Tambah</button>
+                        </div>
+                    </div>
+
+                    <!-- Grafik Mingguan -->
+                    <div class="card">
+                        <div class="card-header">
+                            <i data-lucide="trending-up" style="color: #f1c40f;"></i>
+                            <span>Pendapatan 7 Hari Terakhir</span>
+                        </div>
+                        <div class="chart-container" id="weekly-chart"></div>
+                    </div>
+
+                    <!-- Riwayat Pendapatan -->
+                    <div class="card">
+                        <div class="card-header">
+                            <i data-lucide="list" style="color: #94a3b8;"></i>
+                            <span>Riwayat Hari Ini</span>
+                        </div>
+                        <div class="history-list" id="earnings-list">
+                            <div class="recommendation-item">Belum ada catatan hari ini.</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pengaturan View -->
+            <div id="view-pengaturan" class="view">
+                <div class="dashboard">
+                    <div class="card">
+                        <div class="card-header">
+                            <i data-lucide="timer" style="color: #e67e22;"></i>
+                            <span>Waktu Idle Alert</span>
+                        </div>
+                        <div class="setting-row">
+                            <span>Alert setelah diam (menit)</span>
+                            <select id="setting-idle-time" class="select-field">
+                                <option value="5">5 menit</option>
+                                <option value="10" selected>10 menit</option>
+                                <option value="15">15 menit</option>
+                                <option value="20">20 menit</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">
+                            <i data-lucide="database" style="color: #e74c3c;"></i>
+                            <span>Manajemen Data</span>
+                        </div>
+                        <button class="btn-clear" id="btn-reset-all">Reset Semua Data</button>
+                        <p style="font-size:0.7rem; color:var(--text-dim); margin-top:10px;">Menghapus semua riwayat order, titik gacor, dan data pendapatan dari perangkat ini.</p>
+                    </div>
+                    <div class="card" style="text-align:center;">
+                        <p style="font-size:0.75rem; color:var(--text-dim);">🛵 Ojol Helper v2.0</p>
+                        <p style="font-size:0.65rem; color:var(--text-dim); margin-top:5px;">Dibuat untuk membantu driver mendapatkan orderan lebih cepat.</p>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Bottom Navigation -->
+        <nav class="bottom-nav">
+            <button class="nav-item active" data-view="home">
+                <i data-lucide="home"></i>
+                <span>Beranda</span>
+            </button>
+            <button class="nav-item" data-view="hotspots">
+                <i data-lucide="flame"></i>
+                <span>Hotspots</span>
+            </button>
+            <button class="nav-item" data-view="statistik">
+                <i data-lucide="bar-chart-2"></i>
+                <span>Statistik</span>
+            </button>
+            <button class="nav-item" data-view="pengaturan">
+                <i data-lucide="settings"></i>
+                <span>Pengaturan</span>
+            </button>
+        </nav>
+    </div>
+
+    <!-- Leaflet JS & Plugins -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://leaflet.github.io/Leaflet.heat/dist/leaflet-heat.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
