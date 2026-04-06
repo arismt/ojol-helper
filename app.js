@@ -204,7 +204,7 @@ async function fetchNearbyHotspots(lat, lng) {
     hotspots.forEach(h => map.removeLayer(h));
     hotspots = [];
     places.slice(0, 20).forEach(place => {
-        let color = place.isFleet ? '#2ecc71' : (place.gacorScore > 75 ? '#e74c3c' : (place.gacorScore > 50 ? '#f1c40f' : '#3498db'));
+        let color = place.isFleet ? '#d946ef' : (place.gacorScore > 75 ? '#e74c3c' : (place.gacorScore > 50 ? '#f1c40f' : '#3498db'));
         const spot = L.circle([place.lat, place.lon], { color: color, fillColor: color, fillOpacity: place.isFleet ? 0.6 : 0.3, radius: place.isFleet ? 45 : 60, weight: 1.5 }).addTo(map);
         
         let popupText = `<b>${place.name}</b><br>`;
@@ -235,7 +235,7 @@ function updateSmartRecommendations(places) {
         let levelColor = '#2ecc71';
         let levelText = place.isFleet ? "🚩 Pangkalan Ojol" : "Potensi Sedang";
         if (place.isFleet) {
-            levelColor = '#2ecc71'; 
+            levelColor = '#d946ef'; 
         } else if (place.gacorScore > 80) { 
             levelColor = '#e74c3c'; levelText = "🔥 SANGAT GACOR"; 
         } else if (place.gacorScore > 55) { 
