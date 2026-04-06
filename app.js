@@ -394,18 +394,23 @@ document.getElementById('setting-alarm-voice').addEventListener('change', (e) =>
     localStorage.setItem('isAlarmActive', isAlarmActive);
 });
 
-document.getElementById('btn-test-voice').addEventListener('click', () => {
-    alert("📢 Mencoba memutar suara... Klik 'OK' untuk lanjut.");
-    
-    // Tes bunyikan bell
-    playNotificationSound();
+document.getElementById('btn-test-voice').addEventListener('click', function() {
+    // Efek Visual Tombol
+    const btn = this;
+    const originalText = btn.innerText;
+    btn.style.borderColor = "#2ecc71";
+    btn.innerText = "📢 Memutar Suara...";
+    setTimeout(() => { btn.innerText = originalText; btn.style.borderColor = "var(--primary-color)"; }, 3000);
 
+    // Langsung bunyikan bell (Harus dipanggil di paling atas listener)
+    playNotificationSound();
+    
     if (!window.speechSynthesis) {
         return alert("❌ Browser Abang tidak mendukung suara (SpeechSynthesis). Coba gunakan Chrome terbaru.");
     }
 
     window.speechSynthesis.cancel();
-    const speech = new SpeechSynthesisUtterance("Tes suara asisten Ojol Helper. Jika suaranya masih bahasa Inggris, mohon cek di pengaturan HP Abang bagian Text-to-Speech (TTS) dan download data suara Indonesia.");
+    const speech = new SpeechSynthesisUtterance("Tes suara asisten Ojol Helper. Harusnya ada bunyi lonceng Ding-Dong tadi sebelum saya bicara.");
     
     const idVoice = allVoices.find(v => v.lang.includes('id') || v.lang.includes('ID'));
     if (idVoice) {
