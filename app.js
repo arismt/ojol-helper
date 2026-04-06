@@ -10,6 +10,7 @@ let earningsHistory = JSON.parse(localStorage.getItem('earningsHistory') || '[]'
 let idleLimitMinutes = parseInt(localStorage.getItem('idleLimitMinutes') || '10');
 let isAlarmActive = localStorage.getItem('isAlarmActive') !== 'false';
 let isRaining = false;
+let lastAlertTime = Date.now();
 let weatherDesc = "Cerah";
 let lastWeatherFetch = 0;
 const FETCH_COOLDOWN_MS = 15000;
@@ -22,6 +23,12 @@ const OVERPASS_MIRRORS = [
 ];
 
 lucide.createIcons();
+
+// Sinkronisasi UI Pengaturan saat Start
+document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('setting-idle-time').value = idleLimitMinutes;
+    document.getElementById('setting-alarm-voice').checked = isAlarmActive;
+});
 
 // --- Initialization ---
 
@@ -233,6 +240,7 @@ function startTracking() {
         // Refresh jika geser > 50 meter
         if (!lastPosition || getDistance(lastPosition.lat, lastPosition.lng, latitude, longitude) > 50) {
             lastMoveTime = Date.now();
+            lastAlertTime = Date.now(); // RESET ALERT TIMER JUGA KALO GERAK
             fetchNearbyHotspots(latitude, longitude);
         }
         lastPosition = { lat: latitude, lng: longitude };
@@ -269,17 +277,35 @@ function playProactiveVoiceSuggestion() {
 
 function startIdleTimer() {
     setInterval(() => {
-        const elapsed = Math.floor((Date.now() - lastMoveTime) / 1000);
-        document.getElementById('idle-timer').innerText = `${String(Math.floor(elapsed/60)).padStart(2,'0')}:${String(elapsed%60).padStart(2,'0')}`;
+        const now = Date.now();
+        const totalElapsed = Math.floor((now - lastMoveTime) / 1000);
+        const elapsedSinceAlert = Math.floor((now - lastAlertTime) / 1000);
+        const limitSeconds = idleLimitMinutes * 60;
         
-        // Update visual progress di lingkaran (optional tapi keren)
-        const progress = Math.min((elapsed / (idleLimitMinutes * 60)) * 100, 100);
+        // Tampilan Timer yang looping (Reset ke 0)
+        let displaySeconds = elapsedSinceAlert;
+        if (displaySeconds >= limitSeconds) {
+            // Kita biarkan sedikit lewat (misal 1 detik) biar keliatan pas di titik nolnya
+            // tapi asisten akan mereset lastAlertTime nanti
+        }
+
+        document.getElementById('idle-timer').innerText = `${String(Math.floor(displaySeconds/60)).padStart(2,'0')}:${String(displaySeconds%60).padStart(2,'0')}`;
+        
+        // Tampilkan Total Diam di bawahnya (biar abang gak lupa waktu total)
+        document.getElementById('total-idle-time').innerText = `Total: ${String(Math.floor(totalElapsed/60)).padStart(2,'0')}:${String(totalElapsed%60).padStart(2,'0')}`;
+
+        // Update visual progress di lingkaran
+        const progress = Math.min((elapsedSinceAlert / limitSeconds) * 100, 100);
         document.getElementById('timer-progress').style.strokeDasharray = `${progress}, 100`;
 
-        // Alarm Suara Proaktif (Setiap kelipatan waktu idle agar tidak lewat begitu saja)
-        if (elapsed > 0 && elapsed % (idleLimitMinutes * 60) === 0) { 
+        // Trigger Alert & Reset loop
+        if (elapsedSinceAlert >= limitSeconds) { 
+            console.log("Triggering Loop Alert & Resetting Visual Timer");
             playProactiveVoiceSuggestion(); 
+            lastAlertTime = now; // RESET VISUAL KE 0
+            lastAlertMinute = -1; // Reset tracker menit juga
         }
+        
     }, 1000);
 }
 
