@@ -271,8 +271,13 @@ function startIdleTimer() {
     setInterval(() => {
         const elapsed = Math.floor((Date.now() - lastMoveTime) / 1000);
         document.getElementById('idle-timer').innerText = `${String(Math.floor(elapsed/60)).padStart(2,'0')}:${String(elapsed%60).padStart(2,'0')}`;
-        // Alarm Suara Proaktif
-        if (elapsed === (idleLimitMinutes * 60)) { 
+        
+        // Update visual progress di lingkaran (optional tapi keren)
+        const progress = Math.min((elapsed / (idleLimitMinutes * 60)) * 100, 100);
+        document.getElementById('timer-progress').style.strokeDasharray = `${progress}, 100`;
+
+        // Alarm Suara Proaktif (Setiap kelipatan waktu idle agar tidak lewat begitu saja)
+        if (elapsed > 0 && elapsed % (idleLimitMinutes * 60) === 0) { 
             playProactiveVoiceSuggestion(); 
         }
     }, 1000);
@@ -300,6 +305,25 @@ document.getElementById('log-order-btn').addEventListener('click', () => {
     localStorage.setItem('orderHistory', JSON.stringify(orderHistory));
     updateHeatmap();
     alert("🚀 Titik Gacor tersimpan!");
+});
+
+// --- Settings Handlers ---
+document.getElementById('setting-idle-time').addEventListener('change', (e) => {
+    idleLimitMinutes = parseInt(e.target.value);
+    localStorage.setItem('idleLimitMinutes', idleLimitMinutes);
+    alert(`Konfigurasi tersimpan: Alert setiap ${idleLimitMinutes} menit.`);
+});
+
+document.getElementById('setting-alarm-voice').addEventListener('change', (e) => {
+    isAlarmActive = e.target.checked;
+    localStorage.setItem('isAlarmActive', isAlarmActive);
+});
+
+document.getElementById('btn-reset-all').addEventListener('click', () => {
+    if (confirm("Hapus semua data riwayat dan pengaturan?")) {
+        localStorage.clear();
+        location.reload();
+    }
 });
 
 function updateHeatmap() {
