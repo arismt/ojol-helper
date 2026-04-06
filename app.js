@@ -143,7 +143,12 @@ async function fetchNearbyHotspots(lat, lng) {
     badge.style.background = 'rgba(241, 196, 15, 0.2)';
     badge.style.color = '#f1c40f';
 
-    const query = `[out:json][timeout:15];(nwr(around:2200,${lat},${lng})[amenity~"restaurant|fast_food|cafe|food_court|pharmacy"];nwr(around:2200,${lat},${lng})[shop~"convenience|supermarket|mall|minimarket|department_store"];);out center 50;`;
+    const query = `[out:json][timeout:15];(
+        nwr(around:2500,${lat},${lng})[amenity~"restaurant|fast_food|cafe|food_court|pharmacy"];
+        nwr(around:2500,${lat},${lng})[shop~"convenience|supermarket|mall|minimarket|department_store"];
+        nwr(around:2500,${lat},${lng})[name~"Pangkalan|Basecamp|Ojol|Gojek|Grab|Maxim"];
+        nwr(around:2500,${lat},${lng})[amenity=shelter];
+    );out center 50;`;
     const encodedQuery = encodeURIComponent(query);
     
     let data = null;
@@ -179,9 +184,13 @@ async function fetchNearbyHotspots(lat, lng) {
     const currentHour = new Date().getHours();
     const places = data.elements.map(el => {
         const coords = el.center || { lat: el.lat, lon: el.lon };
+        const name = el.tags.name || el.tags.shop || el.tags.amenity || "Area Rame";
+        const isFleetSpot = name.toLowerCase().match(/pangkalan|basecamp|ojol|gojek|grab|maxim|shelter/);
+        
         const p = {
-            name: el.tags.name || el.tags.shop || el.tags.amenity || "Area Rame",
+            name: name,
             type: el.tags.amenity || el.tags.shop || "Point",
+            isFleet: !!isFleetSpot,
             lat: coords.lat, lon: coords.lon,
             distance: Math.round(getDistance(lat, lng, coords.lat, coords.lon))
         };
@@ -194,10 +203,18 @@ async function fetchNearbyHotspots(lat, lng) {
 
     hotspots.forEach(h => map.removeLayer(h));
     hotspots = [];
-    places.slice(0, 15).forEach(place => {
-        let color = place.gacorScore > 75 ? '#e74c3c' : (place.gacorScore > 50 ? '#f1c40f' : '#3498db');
-        const spot = L.circle([place.lat, place.lon], { color: color, fillColor: color, fillOpacity: 0.3, radius: 60, weight: 1 }).addTo(map);
-        spot.bindPopup(`<b>${place.name}</b><br>Gacor: ${place.gacorScore}%`);
+    places.slice(0, 20).forEach(place => {
+        let color = place.isFleet ? '#2ecc71' : (place.gacorScore > 75 ? '#e74c3c' : (place.gacorScore > 50 ? '#f1c40f' : '#3498db'));
+        const spot = L.circle([place.lat, place.lon], { color: color, fillColor: color, fillOpacity: place.isFleet ? 0.6 : 0.3, radius: place.isFleet ? 45 : 60, weight: 1.5 }).addTo(map);
+        
+        let popupText = `<b>${place.name}</b><br>`;
+        if (place.isFleet) {
+            popupText += `🚩 Potensi Pangkalan Ojol`;
+        } else {
+            popupText += `Skor Gacor: ${place.gacorScore}%`;
+        }
+        
+        spot.bindPopup(popupText);
         hotspots.push(spot);
     });
 
@@ -216,16 +233,21 @@ function updateSmartRecommendations(places) {
         const div = document.createElement('div');
         div.className = 'recommendation-item';
         let levelColor = '#2ecc71';
-        let levelText = "Potensi Sedang";
-        if (place.gacorScore > 80) { levelColor = '#e74c3c'; levelText = "🔥 SANGAT GACOR"; }
-        else if (place.gacorScore > 55) { levelColor = '#f1c40f'; levelText = "⚠️ Potensi Tinggi"; }
+        let levelText = place.isFleet ? "🚩 Pangkalan Ojol" : "Potensi Sedang";
+        if (place.isFleet) {
+            levelColor = '#2ecc71'; 
+        } else if (place.gacorScore > 80) { 
+            levelColor = '#e74c3c'; levelText = "🔥 SANGAT GACOR"; 
+        } else if (place.gacorScore > 55) { 
+            levelColor = '#f1c40f'; levelText = "⚠️ Potensi Tinggi"; 
+        }
 
         div.innerHTML = `
             <div style="display:flex; justify-content:space-between; align-items:start;">
                 <div style="flex:1;">
                    <div style="display:flex; align-items:center; gap:8px;">
                         <strong style="font-size:0.95rem;">${place.name}</strong>
-                        <span style="font-size:0.6rem; padding:2px 6px; border-radius:4px; background:${levelColor}22; color:${levelColor}; border:1px solid ${levelColor}44;">${place.gacorScore}%</span>
+                        <span style="font-size:0.6rem; padding:2px 6px; border-radius:4px; background:${levelColor}22; color:${levelColor}; border:1px solid ${levelColor}44;">${place.isFleet ? 'FLEET' : place.gacorScore + '%'}</span>
                    </div>
                    <small style="color:${levelColor}; font-weight:600; display:block; margin:2px 0;">${levelText}</small>
                    <small style="color:var(--text-dim)">Jarak: ${place.distance}m</small>
