@@ -39,6 +39,31 @@
         <main>
             <div id="map-container">
                 <div id="map"></div>
+                
+                <!-- Floating Status Card (Top) -->
+                <div class="card status-card" id="main-status-card" style="position:absolute; top:70px; left:15px; right:15px; z-index:2100; padding:10px 15px; background:rgba(15, 23, 42, 0.85); display:flex; justify-content:space-between; align-items:center; pointer-events:none; border-radius:14px; border:1px solid rgba(255,255,255,0.1);">
+                    <div class="card-body" style="pointer-events:auto;">
+                        <h2 id="current-zone-title" style="font-size:0.9rem; margin:0;">Mendeteksi Posisi...</h2>
+                    </div>
+                    <div class="card-footer" style="margin:0; pointer-events:auto;">
+                        <div class="badge green" id="status-badge" style="cursor:pointer;">Menunggu GPS</div>
+                    </div>
+                </div>
+
+                <!-- Floating Timer (Right) -->
+                <div class="card stat-card floating-timer" style="position:absolute; top:125px; right:15px; z-index:2100; width:55px; height:55px; border-radius:50%; background:rgba(15, 23, 42, 0.85); display:flex; align-items:center; justify-content:center; box-shadow:0 4px 15px rgba(0,0,0,0.4); border:1px solid rgba(255,255,255,0.1); padding:0;">
+                    <div class="circular-progress" style="width:45px; height:45px;">
+                        <svg viewBox="0 0 36 36" class="circular-chart">
+                            <path class="circle-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                            <path id="timer-progress" class="circle" stroke-dasharray="0, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                        </svg>
+                        <div class="timer-text" style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);">
+                            <span id="idle-timer" style="font-size:0.65rem; font-weight:700;">00:00</span>
+                        </div>
+                    </div>
+                    <div id="total-idle-time" style="display:none;"></div> <!-- Hidden but kept for logic -->
+                </div>
+
                 <!-- Floating Log Button -->
                 <button id="log-order-btn" class="fab">
                     <i data-lucide="plus"></i>
@@ -48,35 +73,10 @@
             
             <!-- Home View -->
             <div id="view-home" class="view active">
-                <div class="dashboard">
-                    <!-- Status Card -->
-                    <div class="card status-card" id="main-status-card">
-                        <div class="card-body">
-                            <h2 id="current-zone-title">Mendeteksi Posisi...</h2>
-                        </div>
-                        <div class="card-footer">
-                            <div class="badge green" id="status-badge" style="pointer-events:auto; cursor:pointer;">Menunggu GPS</div>
-                        </div>
-                    </div>
-
-                    <!-- Floating Timer & Recommended List Grid -->
-                    <div class="stats-grid">
-                        <div class="card stat-card floating-timer">
-                            <div class="circular-progress">
-                                <svg viewBox="0 0 36 36" class="circular-chart">
-                                    <path class="circle-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
-                                    <path id="timer-progress" class="circle" stroke-dasharray="0, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
-                                </svg>
-                                <div class="timer-text">
-                                    <span id="idle-timer" style="font-size:0.7rem;">00:00</span>
-                                </div>
-                            </div>
-                        </div>
-                        
                         <div class="card efficiency-card">
                             <div class="card-header">
                                 <i data-lucide="zap"></i>
-                                <span>Rekomendasi</span>
+                                <span>Rekomendasi Spot Terdekat</span>
                             </div>
                             <div class="recommendation-list" id="recommendation-list">
                                 <div class="recommendation-item">
@@ -84,7 +84,6 @@
                                 </div>
                             </div>
                         </div>
-                    </div>
                 </div>
             </div>
 
