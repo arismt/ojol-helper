@@ -265,14 +265,17 @@ function getDistance(lat1, lon1, lat2, lon2) {
 function playNotificationSound() {
     try {
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (audioCtx.state === 'suspended') {
+            audioCtx.resume();
+        }
         
         function playTone(freq, time, duration) {
             const osc = audioCtx.createOscillator();
             const gain = audioCtx.createGain();
-            osc.type = 'sine';
+            osc.type = 'triangle'; // Suara lebih halus tapi nyaring
             osc.frequency.value = freq;
             gain.gain.setValueAtTime(0, time);
-            gain.gain.linearRampToValueAtTime(0.2, time + 0.05);
+            gain.gain.linearRampToValueAtTime(0.5, time + 0.1);
             gain.gain.exponentialRampToValueAtTime(0.01, time + duration);
             osc.connect(gain);
             gain.connect(audioCtx.destination);
@@ -280,8 +283,9 @@ function playNotificationSound() {
             osc.stop(time + duration);
         }
 
-        playTone(880, audioCtx.currentTime, 0.3); // Nada Ding
-        playTone(660, audioCtx.currentTime + 0.3, 0.4); // Nada Dong
+        // Bunyi Ding-Dong lebih kencang
+        playTone(987.77, audioCtx.currentTime, 0.5); // B5 (Ding)
+        playTone(783.99, audioCtx.currentTime + 0.4, 0.6); // G5 (Dong)
     } catch (e) {
         console.error("Gagal putar bell", e);
     }
