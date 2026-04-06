@@ -9,8 +9,11 @@ let orderHistory = JSON.parse(localStorage.getItem('orderHistory') || '[]');
 let earningsHistory = JSON.parse(localStorage.getItem('earningsHistory') || '[]');
 let idleLimitMinutes = parseInt(localStorage.getItem('idleLimitMinutes') || '10');
 let isAlarmActive = localStorage.getItem('isAlarmActive') !== 'false';
-let lastFetchTime = 0;
+let isRaining = false;
+let weatherDesc = "Cerah";
+let lastWeatherFetch = 0;
 const FETCH_COOLDOWN_MS = 15000;
+const WEATHER_COOLDOWN_MS = 600000; // 10 Menit
 
 const OVERPASS_MIRRORS = [
     'https://overpass-api.de/api/interpreter',
@@ -63,13 +66,65 @@ function calculateGacorScore(place, currentHour) {
     if (place.distance < 400) score += 20;
     else if (place.distance > 1800) score -= 30;
 
+    // --- Weather Bonus Logic ---
+    if (isRaining) {
+        if (type.includes('restaurant') || type.includes('food_court') || type.includes('fast_food')) {
+            score += 35; // Orang lebih banyak pesan makanan pas hujan
+        }
+        if (type.includes('supermarket') || type.includes('convenience') || name.includes('mart')) {
+            score += 20; // Belanja harian juga naik
+        }
+        if (type.includes('mall')) {
+            score += 25; // Mall jadi pusat pangkalan & orderan barang
+        }
+    }
+
     return Math.min(score, 100);
+}
+
+async function fetchWeather(lat, lng) {
+    const now = Date.now();
+    if (now - lastWeatherFetch < WEATHER_COOLDOWN_MS) return;
+    lastWeatherFetch = now;
+
+    try {
+        const response = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current_weather=true`);
+        const data = await response.json();
+        const code = data.current_weather.weathercode;
+        const weatherEl = document.getElementById('weather-info');
+        const weatherIcon = document.getElementById('weather-icon');
+        const weatherText = document.getElementById('weather-text');
+
+        // WMO Weather interpretation codes
+        // 51, 53, 55: Drizzle
+        // 61, 63, 65: Rain
+        // 80, 81, 82: Rain showers
+        if ([51, 53, 55, 61, 63, 65, 80, 81, 82].includes(code)) {
+            isRaining = true;
+            weatherDesc = "Hujan";
+            weatherIcon.innerText = "🌧️";
+            weatherText.style.color = "#3498db";
+        } else {
+            isRaining = false;
+            weatherDesc = "Cerah";
+            weatherIcon.innerText = "☀️";
+            weatherText.style.color = "#f1c40f";
+        }
+        
+        weatherText.innerText = weatherDesc;
+        weatherEl.style.display = 'flex';
+    } catch (e) {
+        console.error("Gagal ambil cuaca", e);
+    }
 }
 
 async function fetchNearbyHotspots(lat, lng) {
     const now = Date.now();
     if (now - lastFetchTime < FETCH_COOLDOWN_MS) return;
     lastFetchTime = now;
+    
+    // Update cuaca juga
+    fetchWeather(lat, lng);
     
     const badge = document.getElementById('status-badge');
     badge.innerText = "🔄 Mengupdate Data...";

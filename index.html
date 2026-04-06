@@ -57,7 +57,13 @@
                         </div>
                         <div class="card-body">
                             <h2 id="current-zone-title">Mendeteksi Posisi...</h2>
-                            <p id="current-zone-desc">Izinkan akses GPS untuk memulai pencarian orderan.</p>
+                            <div style="display:flex; align-items:center; gap:10px; margin-top:5px;">
+                                <p id="current-zone-desc" style="margin:0;">Izinkan akses GPS untuk memulai pencarian orderan.</p>
+                                <div id="weather-info" style="display:none; align-items:center; gap:4px; padding:4px 8px; background:rgba(255,255,255,0.05); border-radius:30px; font-size:0.75rem;">
+                                    <span id="weather-icon">☀️</span>
+                                    <span id="weather-text">Cerah</span>
+                                </div>
+                            </div>
                         </div>
                         <div class="card-footer">
                             <div class="badge green" id="status-badge">Menunggu GPS</div>
