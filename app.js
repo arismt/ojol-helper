@@ -108,23 +108,20 @@ async function fetchWeather(lat, lng) {
         const weatherText = document.getElementById('weather-text');
 
         // WMO Weather interpretation codes
-        // 51, 53, 55: Drizzle
-        // 61, 63, 65: Rain
-        // 80, 81, 82: Rain showers
         if ([51, 53, 55, 61, 63, 65, 80, 81, 82].includes(code)) {
             isRaining = true;
             weatherDesc = "Hujan";
-            weatherIcon.innerText = "🌧️";
-            weatherText.style.color = "#3498db";
+            if (weatherIcon) weatherIcon.innerText = "🌧️";
+            if (weatherText) weatherText.style.color = "#3498db";
         } else {
             isRaining = false;
             weatherDesc = "Cerah";
-            weatherIcon.innerText = "☀️";
-            weatherText.style.color = "#f1c40f";
+            if (weatherIcon) weatherIcon.innerText = "☀️";
+            if (weatherText) weatherText.style.color = "#f1c40f";
         }
         
-        weatherText.innerText = weatherDesc;
-        weatherEl.style.display = 'flex';
+        if (weatherText) weatherText.innerText = weatherDesc;
+        if (weatherEl) weatherEl.style.display = 'flex';
     } catch (e) {
         console.error("Gagal ambil cuaca", e);
     }
@@ -176,7 +173,10 @@ async function fetchNearbyHotspots(lat, lng) {
             updateSmartRecommendations(lastSuccessfulSpots.sort((a,b) => b.gacorScore - a.gacorScore));
         } else {
             badge.innerText = "☕ Standby";
-            showStaticRecommendations();
+            badge.style.background = 'rgba(148, 163, 184, 0.15)';
+            badge.style.color = '#94a3b8';
+            const list = document.getElementById('recommendation-list');
+            if (list) list.innerHTML = '<div class="recommendation-item"><p>Belum ada spot terdekat. Cobalah geser ke jalan utama yang lebih ramai.</p></div>';
         }
         return;
     }
