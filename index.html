@@ -11,7 +11,7 @@
     <link rel="manifest" href="manifest.json">
     <link rel="apple-touch-icon" href="icon.png">
     <link rel="icon" type="image/png" href="icon.png">
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style.css?v=2.2">
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -37,57 +37,59 @@
 
         <!-- Main Content -->
         <main>
+            <!-- Map Container with Floating Overlays -->
             <div id="map-container">
                 <div id="map"></div>
-                
-                <!-- Floating Status Card (Top) -->
-                <div class="card status-card" id="main-status-card" style="position:absolute; top:70px; left:15px; right:15px; z-index:2100; padding:10px 15px; background:rgba(15, 23, 42, 0.85); display:flex; justify-content:space-between; align-items:center; pointer-events:none; border-radius:14px; border:1px solid rgba(255,255,255,0.1);">
-                    <div class="card-body" style="pointer-events:auto;">
-                        <h2 id="current-zone-title" style="font-size:0.9rem; margin:0;">Mendeteksi Posisi...</h2>
+
+                <!-- Floating Status Bar (Top of Map) -->
+                <div id="main-status-card">
+                    <div style="pointer-events:auto;">
+                        <h2 id="current-zone-title" style="font-size:0.85rem; margin:0; font-weight:600;">Mendeteksi Posisi...</h2>
                     </div>
-                    <div class="card-footer" style="margin:0; pointer-events:auto;">
-                        <div class="badge green" id="status-badge" style="cursor:pointer;">Menunggu GPS</div>
+                    <div style="pointer-events:auto;">
+                        <div class="badge green" id="status-badge">Menunggu GPS</div>
                     </div>
                 </div>
 
-                <!-- Floating Timer (Right) -->
-                <div class="card stat-card floating-timer" style="position:absolute; top:125px; right:15px; z-index:2100; width:55px; height:55px; border-radius:50%; background:rgba(15, 23, 42, 0.85); display:flex; align-items:center; justify-content:center; box-shadow:0 4px 15px rgba(0,0,0,0.4); border:1px solid rgba(255,255,255,0.1); padding:0;">
-                    <div class="circular-progress" style="width:45px; height:45px;">
+                <!-- Floating Timer Circle (Top Right of Map) -->
+                <div id="floating-timer-widget">
+                    <div class="circular-progress" style="width:45px; height:45px; position:relative;">
                         <svg viewBox="0 0 36 36" class="circular-chart">
                             <path class="circle-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
                             <path id="timer-progress" class="circle" stroke-dasharray="0, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
                         </svg>
-                        <div class="timer-text" style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);">
-                            <span id="idle-timer" style="font-size:0.65rem; font-weight:700;">00:00</span>
+                        <div style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); text-align:center;">
+                            <span id="idle-timer" style="font-size:0.6rem; font-weight:700; display:block;">00:00</span>
                         </div>
                     </div>
-                    <div id="total-idle-time" style="display:none;"></div> <!-- Hidden but kept for logic -->
+                    <div id="total-idle-time" style="display:none;"></div>
                 </div>
 
-                <!-- Floating Log Button -->
+                <!-- Floating Action Button -->
                 <button id="log-order-btn" class="fab">
                     <i data-lucide="plus"></i>
                     <span>Tandai Titik Gacor</span>
                 </button>
             </div>
-            
-            <!-- Home View -->
+
+            <!-- ==================== HOME VIEW ==================== -->
             <div id="view-home" class="view active">
-                        <div class="card efficiency-card">
-                            <div class="card-header">
-                                <i data-lucide="zap"></i>
-                                <span>Rekomendasi Spot Terdekat</span>
-                            </div>
-                            <div class="recommendation-list" id="recommendation-list">
-                                <div class="recommendation-item">
-                                    <p>Menunggu data lokasi...</p>
-                                </div>
+                <div class="dashboard">
+                    <div class="card efficiency-card">
+                        <div class="card-header">
+                            <i data-lucide="zap"></i>
+                            <span>Rekomendasi Spot Terdekat</span>
+                        </div>
+                        <div class="recommendation-list" id="recommendation-list">
+                            <div class="recommendation-item">
+                                <p>Menunggu data lokasi...</p>
                             </div>
                         </div>
+                    </div>
                 </div>
             </div>
 
-            <!-- Hotspots View (New) -->
+            <!-- ==================== HOTSPOTS VIEW ==================== -->
             <div id="view-hotspots" class="view">
                 <div class="dashboard">
                     <div class="card">
@@ -103,7 +105,7 @@
                 </div>
             </div>
 
-            <!-- Statistik View -->
+            <!-- ==================== STATISTIK VIEW ==================== -->
             <div id="view-statistik" class="view">
                 <div class="dashboard">
                     <!-- Ringkasan Hari Ini -->
@@ -162,7 +164,7 @@
                 </div>
             </div>
 
-            <!-- Pengaturan View -->
+            <!-- ==================== PENGATURAN VIEW ==================== -->
             <div id="view-pengaturan" class="view">
                 <div class="dashboard">
                     <div class="card">
@@ -186,7 +188,7 @@
                                 <span class="slider round"></span>
                             </label>
                         </div>
-                        <button id="btn-test-voice" class="btn-primary" style="margin-top:15px; background:rgba(255,255,255,0.05); border:1px solid var(--primary-color); color:var(--primary-color); font-size:0.8rem;">📢 Tes Suara Asisten</button>
+                        <button id="btn-test-voice" class="btn-primary" style="margin-top:15px; background:rgba(255,255,255,0.05); border:1px solid var(--primary); color:var(--primary); font-size:0.8rem;">📢 Tes Suara Asisten</button>
                     </div>
                     <div class="card">
                         <div class="card-header">
@@ -197,7 +199,7 @@
                         <p style="font-size:0.7rem; color:var(--text-dim); margin-top:10px;">Menghapus semua riwayat order, titik gacor, dan data pendapatan dari perangkat ini.</p>
                     </div>
                     <div class="card" style="text-align:center;">
-                        <p style="font-size:0.75rem; color:var(--text-dim);">🛵 Ojol Helper v2.1 (Fixed Voice)</p>
+                        <p style="font-size:0.75rem; color:var(--text-dim);">🛵 Ojol Helper v2.2 (New Layout)</p>
                         <p style="font-size:0.65rem; color:var(--text-dim); margin-top:5px;">Dibuat untuk membantu driver mendapatkan orderan lebih cepat.</p>
                     </div>
                 </div>
@@ -228,6 +230,6 @@
     <!-- Leaflet JS & Plugins -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://leaflet.github.io/Leaflet.heat/dist/leaflet-heat.js"></script>
-    <script src="app.js?v=2.1"></script>
+    <script src="app.js?v=2.2"></script>
 </body>
 </html>
