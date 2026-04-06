@@ -269,10 +269,14 @@ function playProactiveVoiceSuggestion() {
         message += "Jangan kelamaan nongkrong, yuk cari titik yang lebih ramai!";
     }
 
+    window.speechSynthesis.cancel(); // Hentikan suara sebelumnya jika ada
     const speech = new SpeechSynthesisUtterance(message);
     speech.lang = 'id-ID';
-    speech.rate = 0.9; // Sedikit lebih lambat agar jelas
+    speech.rate = 0.9;
     window.speechSynthesis.speak(speech);
+
+    // Getar HP (jika didukung)
+    if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
 }
 
 function startIdleTimer() {
@@ -303,7 +307,6 @@ function startIdleTimer() {
             console.log("Triggering Loop Alert & Resetting Visual Timer");
             playProactiveVoiceSuggestion(); 
             lastAlertTime = now; // RESET VISUAL KE 0
-            lastAlertMinute = -1; // Reset tracker menit juga
         }
         
     }, 1000);
@@ -343,6 +346,13 @@ document.getElementById('setting-idle-time').addEventListener('change', (e) => {
 document.getElementById('setting-alarm-voice').addEventListener('change', (e) => {
     isAlarmActive = e.target.checked;
     localStorage.setItem('isAlarmActive', isAlarmActive);
+});
+
+document.getElementById('btn-test-voice').addEventListener('click', () => {
+    const speech = new SpeechSynthesisUtterance("Tes suara asisten Ojol Helper. Jika Abang dengar ini, berarti suara sudah aktif.");
+    speech.lang = 'id-ID';
+    window.speechSynthesis.speak(speech);
+    if (navigator.vibrate) navigator.vibrate(200);
 });
 
 document.getElementById('btn-reset-all').addEventListener('click', () => {
