@@ -248,10 +248,22 @@ function getDistance(lat1, lon1, lat2, lon2) {
     return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
 }
 
-// Suara Alarm
-function playVoiceAlarm() {
-    const speech = new SpeechSynthesisUtterance("Waktunya geser Bang! Jangan kelamaan nongkrong.");
+// Asisten Suara Proaktif
+function playProactiveVoiceSuggestion() {
+    if (!isAlarmActive) return;
+
+    let message = "Bang, sudah " + idleLimitMinutes + " menit diam. ";
+    
+    if (lastSuccessfulSpots && lastSuccessfulSpots.length > 0) {
+        const bestPlace = lastSuccessfulSpots[0]; // Karena sudah di-sort b.gacorScore - a.gacorScore
+        message += "Coba geser ke " + bestPlace.name + " yuk, potensi gacor " + bestPlace.gacorScore + " persen!";
+    } else {
+        message += "Jangan kelamaan nongkrong, yuk cari titik yang lebih ramai!";
+    }
+
+    const speech = new SpeechSynthesisUtterance(message);
     speech.lang = 'id-ID';
+    speech.rate = 0.9; // Sedikit lebih lambat agar jelas
     window.speechSynthesis.speak(speech);
 }
 
@@ -259,8 +271,10 @@ function startIdleTimer() {
     setInterval(() => {
         const elapsed = Math.floor((Date.now() - lastMoveTime) / 1000);
         document.getElementById('idle-timer').innerText = `${String(Math.floor(elapsed/60)).padStart(2,'0')}:${String(elapsed%60).padStart(2,'0')}`;
-        // Alarm Suara
-        if (elapsed === (idleLimitMinutes * 60) && isAlarmActive) { playVoiceAlarm(); }
+        // Alarm Suara Proaktif
+        if (elapsed === (idleLimitMinutes * 60)) { 
+            playProactiveVoiceSuggestion(); 
+        }
     }, 1000);
 }
 
