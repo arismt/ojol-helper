@@ -16,6 +16,11 @@ let lastWeatherFetch = 0;
 const FETCH_COOLDOWN_MS = 15000;
 const WEATHER_COOLDOWN_MS = 600000; // 10 Menit
 
+let allVoices = [];
+window.speechSynthesis.onvoiceschanged = () => {
+    allVoices = window.speechSynthesis.getVoices();
+};
+
 const OVERPASS_MIRRORS = [
     'https://overpass-api.de/api/interpreter',
     'https://overpass.kumi.systems/api/interpreter',
@@ -269,13 +274,21 @@ function playProactiveVoiceSuggestion() {
         message += "Jangan kelamaan nongkrong, yuk cari titik yang lebih ramai!";
     }
 
-    window.speechSynthesis.cancel(); // Hentikan suara sebelumnya jika ada
+    window.speechSynthesis.cancel();
     const speech = new SpeechSynthesisUtterance(message);
-    speech.lang = 'id-ID';
+    
+    // Cari suara Indonesia
+    const idVoice = allVoices.find(v => v.lang.includes('id') || v.lang.includes('ID'));
+    if (idVoice) {
+        speech.voice = idVoice;
+        speech.lang = idVoice.lang;
+    } else {
+        speech.lang = 'id-ID';
+    }
+
     speech.rate = 0.9;
     window.speechSynthesis.speak(speech);
 
-    // Getar HP (jika didukung)
     if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
 }
 
@@ -356,9 +369,16 @@ document.getElementById('btn-test-voice').addEventListener('click', () => {
     }
 
     window.speechSynthesis.cancel();
-    const speech = new SpeechSynthesisUtterance("Tes suara asisten Ojol Helper v2.1. Jika Abang dengar ini, berarti suara sudah aktif.");
-    speech.lang = 'id-ID';
+    const speech = new SpeechSynthesisUtterance("Tes suara asisten Ojol Helper. Jika suaranya masih bahasa Inggris, mohon cek di pengaturan HP Abang bagian Text-to-Speech (TTS) dan download data suara Indonesia.");
     
+    const idVoice = allVoices.find(v => v.lang.includes('id') || v.lang.includes('ID'));
+    if (idVoice) {
+        speech.voice = idVoice;
+        speech.lang = idVoice.lang;
+    } else {
+        speech.lang = 'id-ID';
+    }
+
     speech.onerror = (event) => {
         alert("❌ Error Suara: " + event.error + ". Coba cek volume Media di HP Abang.");
     };
