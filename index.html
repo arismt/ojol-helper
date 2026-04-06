@@ -51,37 +51,24 @@
                 <div class="dashboard">
                     <!-- Status Card -->
                     <div class="card status-card" id="main-status-card">
-                        <div class="card-header">
-                            <i data-lucide="map-pin"></i>
-                            <span>Status Lokasi</span>
-                        </div>
                         <div class="card-body">
                             <h2 id="current-zone-title">Mendeteksi Posisi...</h2>
-                            <div style="display:flex; align-items:center; gap:10px; margin-top:5px;">
-                                <p id="current-zone-desc" style="margin:0;">Izinkan akses GPS untuk memulai pencarian orderan.</p>
-                                <div id="weather-info" style="display:none; align-items:center; gap:4px; padding:4px 8px; background:rgba(255,255,255,0.05); border-radius:30px; font-size:0.75rem;">
-                                    <span id="weather-icon">☀️</span>
-                                    <span id="weather-text">Cerah</span>
-                                </div>
-                            </div>
                         </div>
                         <div class="card-footer">
-                            <div class="badge green" id="status-badge">Menunggu GPS</div>
+                            <div class="badge green" id="status-badge" style="pointer-events:auto; cursor:pointer;">Menunggu GPS</div>
                         </div>
                     </div>
 
-                    <!-- Timer Section -->
+                    <!-- Floating Timer & Recommended List Grid -->
                     <div class="stats-grid">
-                        <div class="card stat-card">
+                        <div class="card stat-card floating-timer">
                             <div class="circular-progress">
                                 <svg viewBox="0 0 36 36" class="circular-chart">
                                     <path class="circle-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
                                     <path id="timer-progress" class="circle" stroke-dasharray="0, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
                                 </svg>
                                 <div class="timer-text">
-                                    <span id="idle-timer">00:00</span>
-                                    <small id="idle-sub-label">Waktu Diam</small>
-                                    <div id="total-idle-time" style="font-size: 0.6rem; color: var(--text-dim); margin-top: 2px; opacity: 0.7;">Total: 00:00</div>
+                                    <span id="idle-timer" style="font-size:0.7rem;">00:00</span>
                                 </div>
                             </div>
                         </div>
