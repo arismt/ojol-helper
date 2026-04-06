@@ -295,10 +295,8 @@ function playNotificationSound() {
 function playProactiveVoiceSuggestion() {
     if (!isAlarmActive) return;
 
-    // Bunyikan bell dulu
-    playNotificationSound();
-
-    let message = "Bang, sudah " + idleLimitMinutes + " menit diam. ";
+    let message = "Ding... dong... "; // Simulasi Bell via Suara
+    message += "Bang, sudah " + idleLimitMinutes + " menit diam. ";
     
     if (lastSuccessfulSpots && lastSuccessfulSpots.length > 0) {
         const bestPlace = lastSuccessfulSpots[0]; // Karena sudah di-sort b.gacorScore - a.gacorScore
@@ -402,15 +400,12 @@ document.getElementById('btn-test-voice').addEventListener('click', function() {
     btn.innerText = "📢 Memutar Suara...";
     setTimeout(() => { btn.innerText = originalText; btn.style.borderColor = "var(--primary-color)"; }, 3000);
 
-    // Langsung bunyikan bell (Harus dipanggil di paling atas listener)
-    playNotificationSound();
-    
     if (!window.speechSynthesis) {
         return alert("❌ Browser Abang tidak mendukung suara (SpeechSynthesis). Coba gunakan Chrome terbaru.");
     }
 
     window.speechSynthesis.cancel();
-    const speech = new SpeechSynthesisUtterance("Tes suara asisten Ojol Helper. Harusnya ada bunyi lonceng Ding-Dong tadi sebelum saya bicara.");
+    const speech = new SpeechSynthesisUtterance("Ding... dong... Tes suara asisten Ojol Helper. Jika suaranya masih bahasa Inggris, mohon cek pengaturan TTS di Samsung Abang.");
     
     const idVoice = allVoices.find(v => v.lang.includes('id') || v.lang.includes('ID'));
     if (idVoice) {
