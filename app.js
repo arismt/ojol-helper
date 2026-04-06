@@ -261,9 +261,38 @@ function getDistance(lat1, lon1, lat2, lon2) {
     return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
 }
 
+// Bunyi Bell Digital (Ding-Dong)
+function playNotificationSound() {
+    try {
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        
+        function playTone(freq, time, duration) {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'sine';
+            osc.frequency.value = freq;
+            gain.gain.setValueAtTime(0, time);
+            gain.gain.linearRampToValueAtTime(0.2, time + 0.05);
+            gain.gain.exponentialRampToValueAtTime(0.01, time + duration);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start(time);
+            osc.stop(time + duration);
+        }
+
+        playTone(880, audioCtx.currentTime, 0.3); // Nada Ding
+        playTone(660, audioCtx.currentTime + 0.3, 0.4); // Nada Dong
+    } catch (e) {
+        console.error("Gagal putar bell", e);
+    }
+}
+
 // Asisten Suara Proaktif
 function playProactiveVoiceSuggestion() {
     if (!isAlarmActive) return;
+
+    // Bunyikan bell dulu
+    playNotificationSound();
 
     let message = "Bang, sudah " + idleLimitMinutes + " menit diam. ";
     
@@ -364,6 +393,9 @@ document.getElementById('setting-alarm-voice').addEventListener('change', (e) =>
 document.getElementById('btn-test-voice').addEventListener('click', () => {
     alert("📢 Mencoba memutar suara... Klik 'OK' untuk lanjut.");
     
+    // Tes bunyikan bell
+    playNotificationSound();
+
     if (!window.speechSynthesis) {
         return alert("❌ Browser Abang tidak mendukung suara (SpeechSynthesis). Coba gunakan Chrome terbaru.");
     }
