@@ -349,10 +349,27 @@ document.getElementById('setting-alarm-voice').addEventListener('change', (e) =>
 });
 
 document.getElementById('btn-test-voice').addEventListener('click', () => {
-    const speech = new SpeechSynthesisUtterance("Tes suara asisten Ojol Helper. Jika Abang dengar ini, berarti suara sudah aktif.");
+    alert("📢 Mencoba memutar suara... Klik 'OK' untuk lanjut.");
+    
+    if (!window.speechSynthesis) {
+        return alert("❌ Browser Abang tidak mendukung suara (SpeechSynthesis). Coba gunakan Chrome terbaru.");
+    }
+
+    window.speechSynthesis.cancel();
+    const speech = new SpeechSynthesisUtterance("Tes suara asisten Ojol Helper v2.1. Jika Abang dengar ini, berarti suara sudah aktif.");
     speech.lang = 'id-ID';
+    
+    speech.onerror = (event) => {
+        alert("❌ Error Suara: " + event.error + ". Coba cek volume Media di HP Abang.");
+    };
+
     window.speechSynthesis.speak(speech);
-    if (navigator.vibrate) navigator.vibrate(200);
+    
+    if (navigator.vibrate) {
+        navigator.vibrate(200);
+    } else {
+        console.warn("Vibration API not supported");
+    }
 });
 
 document.getElementById('btn-reset-all').addEventListener('click', () => {
