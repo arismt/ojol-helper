@@ -13,6 +13,7 @@ let isRaining = false;
 let lastAlertTime = Date.now();
 let weatherDesc = "Cerah";
 let lastWeatherFetch = 0;
+let lastFetchTime = 0;
 const FETCH_COOLDOWN_MS = 15000;
 const WEATHER_COOLDOWN_MS = 600000; // 10 Menit
 
@@ -24,6 +25,7 @@ window.speechSynthesis.onvoiceschanged = () => {
 const OVERPASS_MIRRORS = [
     'https://overpass-api.de/api/interpreter',
     'https://overpass.kumi.systems/api/interpreter',
+    'https://overpass.osm.ch/api/interpreter',
     'https://maps.mail.ru/osm/tools/overpass/api/interpreter'
 ];
 
@@ -91,7 +93,7 @@ function calculateGacorScore(place, currentHour) {
         }
     }
 
-    return Math.min(score, 100);
+    return Math.max(0, Math.min(score, 100));
 }
 
 async function fetchWeather(lat, lng) {
@@ -154,11 +156,22 @@ async function fetchNearbyHotspots(lat, lng) {
     for (const mirror of OVERPASS_MIRRORS) {
         try {
             const controller = new AbortController();
-            const timer = setTimeout(() => controller.abort(), 12000);
-            const response = await fetch(`${mirror}?data=${encodedQuery}`, { signal: controller.signal });
+            const timer = setTimeout(() => controller.abort(), 20000); // Tunggu sampai 20 detik (lebihi timeout query 15s)
+            const response = await fetch(`${mirror}?data=${encodedQuery}`, { 
+                signal: controller.signal,
+                cache: 'no-cache'
+            });
             clearTimeout(timer);
-            if (response.ok) { data = await response.json(); mirrorFound = true; break; }
-        } catch (e) {}
+            if (response.ok) { 
+                data = await response.json(); 
+                if (data && data.elements && data.elements.length > 0) {
+                    mirrorFound = true; 
+                    break; 
+                }
+            }
+        } catch (e) {
+            console.warn(`Mirror ${mirror} gagal atau timeout`, e);
+        }
     }
 
     // MEMORY CACHE LOGIC: Jika gagal, jangan hapus yang ada di layar
@@ -169,6 +182,7 @@ async function fetchNearbyHotspots(lat, lng) {
             // Update jarak dari data memori
             lastSuccessfulSpots.forEach(p => {
                 p.distance = Math.round(getDistance(lat, lng, p.lat, p.lon));
+                p.gacorScore = calculateGacorScore(p, new Date().getHours());
             });
             updateSmartRecommendations(lastSuccessfulSpots.sort((a,b) => b.gacorScore - a.gacorScore));
         } else {
