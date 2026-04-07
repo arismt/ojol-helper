@@ -142,12 +142,12 @@ async function fetchNearbyHotspots(lat, lng) {
     badge.style.background = 'rgba(241, 196, 15, 0.2)';
     badge.style.color = '#f1c40f';
 
-    const query = `[out:json][timeout:15];(
-        nwr(around:2500,${lat},${lng})[amenity~"restaurant|fast_food|cafe|food_court|pharmacy"];
-        nwr(around:2500,${lat},${lng})[shop~"convenience|supermarket|mall|minimarket|department_store"];
-        nwr(around:2500,${lat},${lng})[name~"Pangkalan|Basecamp|Ojol|Gojek|Grab|Maxim"];
-        nwr(around:2500,${lat},${lng})[name~"warung|mie|bakso|kantin",i];
-        nwr(around:2500,${lat},${lng})[amenity=shelter];
+    const query = `[out:json][timeout:20];(
+        nwr(around:3500,${lat},${lng})[amenity~"restaurant|fast_food|cafe|food_court|pharmacy"];
+        nwr(around:3500,${lat},${lng})[shop~"convenience|supermarket|mall|minimarket|department_store"];
+        nwr(around:3500,${lat},${lng})[name~"Pangkalan|Basecamp|Ojol|Gojek|Grab|Maxim"];
+        nwr(around:3500,${lat},${lng})[name~"warung|mie|bakso|kantin",i];
+        nwr(around:3500,${lat},${lng})[amenity=shelter];
     );out center 50;`;
     const encodedQuery = encodeURIComponent(query);
     
@@ -156,28 +156,19 @@ async function fetchNearbyHotspots(lat, lng) {
 
     for (const mirror of OVERPASS_MIRRORS) {
         try {
-            const controller = new AbortController();
-            const timeoutSignal = controller.signal;
-            const timer = setTimeout(() => controller.abort(), 25000); 
-
+            badge.innerText = "📡 Mencari...";
             const response = await fetch(mirror, { 
                 method: 'POST',
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                 body: 'data=' + encodedQuery,
-                signal: timeoutSignal,
                 cache: 'no-cache'
             });
             
-            clearTimeout(timer);
             if (response.ok) { 
                 data = await response.json(); 
-                if (data && data.elements && data.elements.length > 0) {
+                if (data && data.elements) {
                     mirrorFound = true; 
                     break; 
-                } else if (data && data.elements) {
-                    // Berhasil fetch tapi emang kosong di area itu (jarang di kota, tapi mungkin)
-                    mirrorFound = true;
-                    break;
                 }
             }
         } catch (e) {
@@ -203,8 +194,8 @@ async function fetchNearbyHotspots(lat, lng) {
             badge.style.color = '#94a3b8';
             if (list) {
                 const errorMsg = !mirrorFound ? 
-                    "Gagal menghubungkan ke server peta. Pastikan internet lancar." : 
-                    "Belum ada spot terdekat di radius ini. Coba geser ke area yang lebih ramai.";
+                    "Sinyal server lemah atau koneksi internet terganggu. Klik tombol STANDBY untuk coba lagi." : 
+                    "Belum ada spot terdekat di radius 3.5km. Coba geser ke area yang lebih ramai.";
                 list.innerHTML = `<div class="recommendation-item"><p style="font-size:0.8rem; opacity:0.8;">${errorMsg}</p></div>`;
             }
         }
