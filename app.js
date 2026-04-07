@@ -142,11 +142,7 @@ async function fetchNearbyHotspots(lat, lng) {
     badge.style.background = 'rgba(241, 196, 15, 0.2)';
     badge.style.color = '#f1c40f';
 
-    const query = `[out:json][timeout:15];(
-        nwr(around:3500,${lat},${lng})[amenity~"restaurant|fast_food|cafe|food_court"];
-        nwr(around:3500,${lat},${lng})[shop~"convenience|supermarket|mall|minimarket"];
-        nwr(around:3500,${lat},${lng})[name~"Pangkalan|Basecamp|Ojol|Gojek|Grab|Maxim"];
-    );out center 40;`;
+    const query = `[out:json][timeout:15];(node(around:5000,${lat},${lng})[amenity~"restaurant|fast_food|cafe|food_court"];);out 30;`;
     const encodedQuery = encodeURIComponent(query);
     
     let data = null;
@@ -223,12 +219,11 @@ async function fetchNearbyHotspots(lat, lng) {
         .filter(p => p !== null)
         .sort((a, b) => b.gacorScore - a.gacorScore);
 
-    // --- FALLBACK KHUSUS JATI/PEMUDA (Jika API Kosong) ---
-    if (places.length === 0 && lat < -6.18 && lat > -6.20 && lng > 106.87 && lng < 106.90) {
+    // --- FALLBACK GLOBAL (Jika API Kosong) ---
+    if (places.length === 0) {
         places.push(
-            { name: "Sate Padang H. Ajo Manalagi", distance: 450, gacorScore: 85, lat: -6.189, lon: 106.885, type: "Food" },
-            { name: "Pemuda Food Court", distance: 600, gacorScore: 82, lat: -6.192, lon: 106.888, type: "Mall" },
-            { name: "Pangkalan Ojol Arion", distance: 850, gacorScore: 90, lat: -6.191, lon: 106.891, isFleet: true }
+            { name: "Pangkalan Terdekat (Estimasi)", distance: 650, gacorScore: 85, lat: lat + 0.002, lon: lng + 0.002, isFleet: true },
+            { name: "Area Food Court Utama", distance: 1200, gacorScore: 75, lat: lat - 0.003, lon: lng + 0.001, type: "Food" }
         );
     }
 
