@@ -167,7 +167,7 @@ main {
 
 .fab {
     position: absolute;
-    bottom: 35px; /* Lebih naik agar tidak tertutup dashboard */
+    bottom: 75px; /* Lebih naik agar tidak tertutup dashboard */
     right: 15px;
     background: var(--primary);
     color: white;
